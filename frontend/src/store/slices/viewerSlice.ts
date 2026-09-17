@@ -1,5 +1,5 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-import { SliceConfig, VolumeRenderingConfig, Point3D, MeasurementResult } from '../../types';
+import { SliceConfig, VolumeRenderingConfig, Point3D, MeasurementResult, DisplaySnapshot, SliceType } from '../../types';
 
 interface ViewerState {
   slices: {
@@ -72,32 +72,32 @@ const viewerSlice = createSlice({
   reducers: {
     setSliceVisible: (
       state,
-      action: PayloadAction<{ sliceType: 'inline' | 'crossline' | 'depth'; visible: boolean }>
+      action: PayloadAction<{ sliceType: SliceType; visible: boolean }>
     ) => {
       state.slices[action.payload.sliceType].visible = action.payload.visible;
     },
     setSliceIndex: (
       state,
-      action: PayloadAction<{ sliceType: 'inline' | 'crossline' | 'depth'; index: number }>
+      action: PayloadAction<{ sliceType: SliceType; index: number }>
     ) => {
       state.slices[action.payload.sliceType].index = action.payload.index;
     },
     setSliceOpacity: (
       state,
-      action: PayloadAction<{ sliceType: 'inline' | 'crossline' | 'depth'; opacity: number }>
+      action: PayloadAction<{ sliceType: SliceType; opacity: number }>
     ) => {
       state.slices[action.payload.sliceType].opacity = action.payload.opacity;
     },
     setSliceColormap: (
       state,
-      action: PayloadAction<{ sliceType: 'inline' | 'crossline' | 'depth'; colormap: string }>
+      action: PayloadAction<{ sliceType: SliceType; colormap: string }>
     ) => {
       state.slices[action.payload.sliceType].colormap = action.payload.colormap;
     },
     setSliceValueRange: (
       state,
       action: PayloadAction<{
-        sliceType: 'inline' | 'crossline' | 'depth';
+        sliceType: SliceType;
         minValue: number | null;
         maxValue: number | null;
       }>
@@ -113,6 +113,22 @@ const viewerSlice = createSlice({
     },
     setVolumeRenderingOpacity: (state, action: PayloadAction<number>) => {
       state.volumeRendering.opacity = action.payload;
+    },
+    /**
+     * 整组应用显示方案：一次性覆盖三个切片的启用状态/透明度/色标，
+     * 以及体绘制的启用状态与透明度。切片索引、背景深浅、相机等保持不变。
+     */
+    applyDisplaySnapshot: (state, action: PayloadAction<DisplaySnapshot>) => {
+      const { slices, volumeRendering } = action.payload;
+      (['inline', 'crossline', 'depth'] as SliceType[]).forEach((sliceType) => {
+        const target = slices[sliceType];
+        if (!target) return;
+        state.slices[sliceType].visible = target.visible;
+        state.slices[sliceType].opacity = target.opacity;
+        state.slices[sliceType].colormap = target.colormap;
+      });
+      state.volumeRendering.enabled = volumeRendering.enabled;
+      state.volumeRendering.opacity = volumeRendering.opacity;
     },
     setTool: (state, action: PayloadAction<ViewerState['tool']>) => {
       state.tool = action.payload;
@@ -159,6 +175,7 @@ export const {
   setVolumeRenderingEnabled,
   setVolumeRenderingQuality,
   setVolumeRenderingOpacity,
+  applyDisplaySnapshot,
   setTool,
   setMeasurementType,
   addMeasurementPoint,

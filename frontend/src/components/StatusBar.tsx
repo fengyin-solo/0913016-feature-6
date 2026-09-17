@@ -1,8 +1,14 @@
 import React from 'react';
-import { Space, Tag, Typography } from 'antd';
-import { InfoCircleOutlined, DatabaseOutlined, LineChartOutlined } from '@ant-design/icons';
+import { Space, Tag, Typography, Tooltip } from 'antd';
+import {
+  InfoCircleOutlined,
+  DatabaseOutlined,
+  LineChartOutlined,
+  ProfileOutlined,
+} from '@ant-design/icons';
 import { useSelector } from 'react-redux';
 import { RootState } from '../store';
+import { SLICE_LABELS, SLICE_TYPES, buildDisplaySnapshot, isSnapshotEqual } from '../store/slices/displaySchemeSlice';
 import { SeismicData } from '../types';
 
 const { Text } = Typography;
@@ -15,6 +21,20 @@ const StatusBar: React.FC<StatusBarProps> = ({ seismicData }) => {
   const tool = useSelector((state: RootState) => state.viewer.tool);
   const lastMeasurement = useSelector((state: RootState) => state.viewer.lastMeasurement);
   const measurementPoints = useSelector((state: RootState) => state.viewer.measurementPoints);
+  const slices = useSelector((state: RootState) => state.viewer.slices);
+  const volumeRendering = useSelector((state: RootState) => state.viewer.volumeRendering);
+  const schemes = useSelector((state: RootState) => state.displaySchemes.schemes);
+  const activeSchemeId = useSelector(
+    (state: RootState) => state.displaySchemes.activeSchemeId
+  );
+
+  const activeScheme = schemes.find((s) => s.id === activeSchemeId) ?? null;
+  const enabledSliceLabels = SLICE_TYPES.filter((t) => slices[t].visible).map(
+    (t) => SLICE_LABELS[t]
+  );
+  const schemeDirty = activeScheme
+    ? !isSnapshotEqual(buildDisplaySnapshot(slices, volumeRendering), activeScheme.snapshot)
+    : false;
 
   const toolLabels: Record<string, string> = {
     rotate: '旋转模式',
@@ -54,6 +74,39 @@ const StatusBar: React.FC<StatusBarProps> = ({ seismicData }) => {
           <Text type="secondary">当前模式: </Text>
           <Tag color="blue">{toolLabels[tool] || tool}</Tag>
         </>
+      ),
+    },
+    {
+      icon: <ProfileOutlined />,
+      content: (
+        <Tooltip
+          title={
+            activeScheme
+              ? `方案包含：${
+                  SLICE_TYPES.filter((t) => activeScheme.snapshot.slices[t].visible)
+                    .map((t) => SLICE_LABELS[t] + '切片')
+                    .join('、') || '无切片'
+                }${activeScheme.snapshot.volumeRendering.enabled ? '、体绘制' : ''}`
+              : '尚未应用显示方案'
+          }
+        >
+          <Text type="secondary">显示方案: </Text>
+          {activeScheme ? (
+            <Space size={4}>
+              <Tag color="blue">{activeScheme.name}</Tag>
+              {schemeDirty && <Tag color="orange">已调整未保存</Tag>}
+            </Space>
+          ) : (
+            <Tag>临时</Tag>
+          )}
+          <Text type="secondary" style={{ marginLeft: 8 }}>
+            显示中:
+          </Text>
+          {enabledSliceLabels.length > 0 &&
+            enabledSliceLabels.map((label) => <Tag key={label}>{label}切片</Tag>)}
+          {volumeRendering.enabled && <Tag color="purple">体绘制</Tag>}
+          {enabledSliceLabels.length === 0 && !volumeRendering.enabled && <Tag>无</Tag>}
+        </Tooltip>
       ),
     },
   ];

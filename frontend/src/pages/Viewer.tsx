@@ -5,6 +5,7 @@ import { Button, Spin, message, Space, Typography } from 'antd';
 import { ArrowLeftOutlined } from '@ant-design/icons';
 import { RootState, AppDispatch } from '../store';
 import { fetchSeismicData, setCurrentSeismic } from '../store/slices/seismicSlice';
+import { initSchemesForSeismic } from '../store/slices/displaySchemeSlice';
 import { SeismicData } from '../types';
 import SeismicCanvas from '../components/SeismicCanvas';
 import ControlPanel from '../components/ControlPanel';
@@ -39,6 +40,13 @@ const Viewer: React.FC = () => {
 
     loadData();
   }, [seismicId, seismicList, dispatch, navigate]);
+
+  // 进入（或切回）数据体时恢复该数据体最近一次使用的显示方案
+  useEffect(() => {
+    if (currentData) {
+      dispatch(initSchemesForSeismic(currentData.id));
+    }
+  }, [currentData, dispatch]);
 
   if (loading || !currentData) {
     return (

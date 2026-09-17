@@ -116,8 +116,10 @@ export interface MeasurementResult {
   points: Point3D[];
 }
 
+export type SliceType = 'inline' | 'crossline' | 'depth';
+
 export interface SliceConfig {
-  type: 'inline' | 'crossline' | 'depth';
+  type: SliceType;
   index: number;
   visible: boolean;
   opacity: number;
@@ -131,6 +133,35 @@ export interface VolumeRenderingConfig {
   quality: number;
   sampleRate: number;
   opacity: number;
+}
+
+/**
+ * 显示方案中保存的单个切片状态：
+ * 启用状态、透明度、色标（切片索引不属于方案内容）。
+ */
+export interface DisplaySchemeSlice {
+  visible: boolean;
+  opacity: number;
+  colormap: string;
+}
+
+/** 显示方案快照：切片组 + 体绘制的显示状态。 */
+export interface DisplaySnapshot {
+  slices: Record<SliceType, DisplaySchemeSlice>;
+  volumeRendering: {
+    enabled: boolean;
+    opacity: number;
+  };
+}
+
+/** 可整组保存/恢复的显示方案。 */
+export interface DisplayScheme {
+  id: string;
+  name: string;
+  seismicId: number;
+  snapshot: DisplaySnapshot;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface ViewState {
