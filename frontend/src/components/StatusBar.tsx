@@ -1,11 +1,17 @@
 import React from 'react';
-import { Space, Tag, Typography } from 'antd';
-import { InfoCircleOutlined, DatabaseOutlined, LineChartOutlined } from '@ant-design/icons';
+import { Space, Tag, Typography, Tooltip } from 'antd';
+import { InfoCircleOutlined, DatabaseOutlined, LineChartOutlined, AppstoreOutlined } from '@ant-design/icons';
 import { useSelector } from 'react-redux';
 import { RootState } from '../store';
-import { SeismicData } from '../types';
+import { SeismicData, SliceType } from '../types';
 
 const { Text } = Typography;
+
+const SLICE_LABELS: Record<SliceType, string> = {
+  inline: 'Inline',
+  crossline: 'Crossline',
+  depth: '深度',
+};
 
 interface StatusBarProps {
   seismicData: SeismicData;
@@ -15,6 +21,11 @@ const StatusBar: React.FC<StatusBarProps> = ({ seismicData }) => {
   const tool = useSelector((state: RootState) => state.viewer.tool);
   const lastMeasurement = useSelector((state: RootState) => state.viewer.lastMeasurement);
   const measurementPoints = useSelector((state: RootState) => state.viewer.measurementPoints);
+  const displaySchemes = useSelector((state: RootState) => state.viewer.displaySchemes);
+  const activeDisplaySchemeId = useSelector(
+    (state: RootState) => state.viewer.activeDisplaySchemeId
+  );
+  const activeScheme = displaySchemes.find((scheme) => scheme.id === activeDisplaySchemeId);
 
   const toolLabels: Record<string, string> = {
     rotate: '旋转模式',
@@ -53,6 +64,37 @@ const StatusBar: React.FC<StatusBarProps> = ({ seismicData }) => {
         <>
           <Text type="secondary">当前模式: </Text>
           <Tag color="blue">{toolLabels[tool] || tool}</Tag>
+        </>
+      ),
+    },
+    {
+      icon: <AppstoreOutlined />,
+      content: (
+        <>
+          <Text type="secondary">显示方案: </Text>
+          {activeScheme ? (
+            <Tooltip
+              title={
+                <div style={{ fontSize: 12 }}>
+                  {(['inline', 'crossline', 'depth'] as SliceType[])
+                    .filter((sliceType) => activeScheme.config.slices[sliceType].visible)
+                    .map((sliceType) => {
+                      const slice = activeScheme.config.slices[sliceType];
+                      return (
+                        <div key={sliceType}>
+                          {SLICE_LABELS[sliceType]} · 透明度 {(slice.opacity * 100).toFixed(0)}% · {slice.colormap}
+                        </div>
+                      );
+                    })}
+                  <div>体绘制: {activeScheme.config.volumeRendering.enabled ? `开 · ${(activeScheme.config.volumeRendering.opacity * 100).toFixed(0)}%` : '关'}</div>
+                </div>
+              }
+            >
+              <Tag color="purple">{activeScheme.name}</Tag>
+            </Tooltip>
+          ) : (
+            <Text>自定义</Text>
+          )}
         </>
       ),
     },

@@ -5,7 +5,18 @@ import { Button, Spin, message, Space, Typography } from 'antd';
 import { ArrowLeftOutlined } from '@ant-design/icons';
 import { RootState, AppDispatch } from '../store';
 import { fetchSeismicData, setCurrentSeismic } from '../store/slices/seismicSlice';
+import {
+  hydrateDisplaySchemes,
+} from '../store/slices/viewerSlice';
 import { SeismicData } from '../types';
+import {
+  loadSchemes,
+  saveSchemes,
+} from '../services/displaySchemeStorage';
+import {
+  applySchemeConfig,
+  DEFAULT_SCHEME_CONFIG,
+} from '../services/displaySchemeConfig';
 import SeismicCanvas from '../components/SeismicCanvas';
 import ControlPanel from '../components/ControlPanel';
 import Toolbar from '../components/Toolbar';
@@ -21,6 +32,39 @@ const Viewer: React.FC = () => {
 
   const { seismicList, loading } = useSelector((state: RootState) => state.seismic);
   const [currentData, setCurrentData] = useState<SeismicData | null>(null);
+
+  const displaySchemes = useSelector((state: RootState) => state.viewer.displaySchemes);
+  const activeDisplaySchemeId = useSelector(
+    (state: RootState) => state.viewer.activeDisplaySchemeId
+  );
+  // 标记当前方案数据已完成水合的数据体 ID，避免用切换前的旧状态覆盖新数据体的存储
+  const [hydratedSeismicId, setHydratedSeismicId] = useState<number | null>(null);
+
+  // 切换数据体（或刷新后进入）时，按数据体恢复保存的方案列表并应用最近一次使用的方案
+  useEffect(() => {
+    const id = parseInt(seismicId || '0', 10);
+    if (!id) return;
+
+    const { schemes, activeSchemeId } = loadSchemes(id);
+
+    const active = schemes.find((scheme) => scheme.id === activeSchemeId);
+    if (active) {
+      applySchemeConfig(dispatch, active.config);
+    } else if (schemes.length === 0) {
+      // 从未保存过方案的数据体回到默认显示，避免残留上一个数据体的切片
+      applySchemeConfig(dispatch, DEFAULT_SCHEME_CONFIG);
+    }
+    // 方案应用派发的单项 action 会清空激活标记，最后再统一恢复水合后的方案列表与激活方案
+    dispatch(hydrateDisplaySchemes({ schemes, activeSchemeId }));
+    setHydratedSeismicId(id);
+  }, [seismicId, dispatch]);
+
+  // 方案列表/激活方案变化时按数据体持久化
+  useEffect(() => {
+    const id = parseInt(seismicId || '0', 10);
+    if (!id || hydratedSeismicId !== id) return;
+    saveSchemes(id, { schemes: displaySchemes, activeSchemeId: activeDisplaySchemeId });
+  }, [seismicId, displaySchemes, activeDisplaySchemeId, hydratedSeismicId]);
 
   useEffect(() => {
     const loadData = async () => {

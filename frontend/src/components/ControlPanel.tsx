@@ -15,6 +15,7 @@ import {
 } from '../store/slices/viewerSlice';
 import { RootState, AppDispatch } from '../store';
 import { SeismicData } from '../types';
+import DisplaySchemePanel from './DisplaySchemePanel';
 
 const { Title, Text } = Typography;
 const { Panel } = Collapse;
@@ -130,6 +131,7 @@ const ControlPanel: React.FC<ControlPanelProps> = ({ seismicData }) => {
         }
         style={{ marginBottom: 0 }}
       >
+        <DisplaySchemePanel />
         <Collapse
           activeKey={activeKeys}
           onChange={(keys) => setActiveKeys(keys as string[])}

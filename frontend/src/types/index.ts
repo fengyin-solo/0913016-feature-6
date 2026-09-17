@@ -116,8 +116,10 @@ export interface MeasurementResult {
   points: Point3D[];
 }
 
+export type SliceType = 'inline' | 'crossline' | 'depth';
+
 export interface SliceConfig {
-  type: 'inline' | 'crossline' | 'depth';
+  type: SliceType;
   index: number;
   visible: boolean;
   opacity: number;
@@ -131,6 +133,37 @@ export interface VolumeRenderingConfig {
   quality: number;
   sampleRate: number;
   opacity: number;
+}
+
+/** 可随显示方案整组保存/恢复的单个切片状态（不含切片位置等浏览状态） */
+export interface DisplaySchemeSliceState {
+  visible: boolean;
+  opacity: number;
+  colormap: string;
+}
+
+/** 显示方案的完整显示状态：切片开关/透明度/色标 + 体绘制开关/透明度 */
+export interface DisplaySchemeConfig {
+  slices: Record<SliceType, DisplaySchemeSliceState>;
+  volumeRendering: {
+    enabled: boolean;
+    opacity: number;
+  };
+}
+
+/** 可一键切换的显示方案 */
+export interface DisplayScheme {
+  id: string;
+  name: string;
+  config: DisplaySchemeConfig;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** 单个数据体在本地持久化的方案数据 */
+export interface DisplaySchemeStorageData {
+  schemes: DisplayScheme[];
+  activeSchemeId: string | null;
 }
 
 export interface ViewState {
